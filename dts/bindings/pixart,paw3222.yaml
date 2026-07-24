@@ -27,6 +27,13 @@ properties:
       CPI resolution for the sensor. This can also be changed in runtime using
       the paw32xx_set_resolution() API.
 
+    rotation-angle:
+    type: int
+    default: 0
+    description: |
+      Clockwise rotation angle in degrees applied to the reported X/Y movement.
+      Positive and negative integer values are supported.
+
   force-awake:
     type: boolean
     description: |
