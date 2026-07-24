@@ -27,7 +27,7 @@ properties:
       CPI resolution for the sensor. This can also be changed in runtime using
       the paw32xx_set_resolution() API.
 
-    rotation-angle:
+  rotation-angle:
     type: int
     default: 0
     description: |
