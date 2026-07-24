@@ -83,44 +83,106 @@ struct paw32xx_data {
     struct k_timer motion_timer; // Add timer for delayed motion checking
 };
 
+/*
+ * Q15 fixed-point sine table for 0° to 90°.
+ *
+ * 1.0 = 32767
+ * Generated values are rounded to the nearest integer.
+ */
+static const int16_t paw32xx_sin_q15_table[91] = {
+    0,     572,   1144,  1715,  2286,  2856,  3425,  3993,  4560,  5126,
+    5690,  6252,  6813,  7371,  7927,  8481,  9032,  9580,  10126, 10668,
+    11207, 11743, 12275, 12803, 13328, 13848, 14364, 14876, 15383, 15886,
+    16383, 16876, 17364, 17846, 18323, 18794, 19260, 19720, 20173, 20621,
+    21062, 21497, 21925, 22347, 22762, 23170, 23571, 23964, 24351, 24730,
+    25101, 25465, 25821, 26169, 26509, 26841, 27165, 27481, 27788, 28087,
+    28377, 28659, 28932, 29196, 29451, 29697, 29934, 30162, 30381, 30591,
+    30791, 30982, 31163, 31335, 31498, 31650, 31794, 31927, 32051, 32165,
+    32269, 32364, 32448, 32523, 32587, 32642, 32687, 32722, 32747, 32762,
+    32767,
+};
+
+/*
+ * Normalize an angle to the range 0° to 359°.
+ */
+static int16_t paw32xx_normalize_angle(int16_t angle)
+{
+    angle %= 360;
+
+    if (angle < 0) {
+        angle += 360;
+    }
+
+    return angle;
+}
+
+/*
+ * Return sin(angle) in Q15 fixed-point format.
+ */
+static int16_t paw32xx_sin_q15(int16_t angle)
+{
+    angle = paw32xx_normalize_angle(angle);
+
+    if (angle <= 90) {
+        return paw32xx_sin_q15_table[angle];
+    }
+
+    if (angle <= 180) {
+        return paw32xx_sin_q15_table[180 - angle];
+    }
+
+    if (angle <= 270) {
+        return -paw32xx_sin_q15_table[angle - 180];
+    }
+
+    return -paw32xx_sin_q15_table[360 - angle];
+}
+
+/*
+ * Return cos(angle) in Q15 fixed-point format.
+ */
+static int16_t paw32xx_cos_q15(int16_t angle)
+{
+    return paw32xx_sin_q15(angle + 90);
+}
+
+/*
+ * Rotate the sensor's X/Y movement before reporting input events.
+ *
+ * The calculation uses 32-bit intermediate values to prevent overflow.
+ * Positive angles preserve the same direction used by the earlier
+ * 90-degree test implementation:
+ *
+ *     90°: x' = -y
+ *          y' =  x
+ */
 static void paw32xx_rotate_xy(int16_t *x, int16_t *y, int16_t angle)
 {
+    int16_t normalized_angle;
+    int16_t sin_value;
+    int16_t cos_value;
+    int32_t original_x;
+    int32_t original_y;
     int32_t rotated_x;
     int32_t rotated_y;
 
-    /* 角度を -359〜359° に収める */
-    angle %= 360;
+    normalized_angle = paw32xx_normalize_angle(angle);
 
-    /*
-     * まず動作確認用として90°刻みだけ対応。
-     * 任意角度対応は、このあと追加する。
-     */
-    switch (angle) {
-    case 0:
-        return;
-
-    case 90:
-    case -270:
-        rotated_x = -(*y);
-        rotated_y = *x;
-        break;
-
-    case 180:
-    case -180:
-        rotated_x = -(*x);
-        rotated_y = -(*y);
-        break;
-
-    case 270:
-    case -90:
-        rotated_x = *y;
-        rotated_y = -(*x);
-        break;
-
-    default:
-        /* まだ90°刻み以外には対応しない */
+    if (normalized_angle == 0) {
         return;
     }
+
+    sin_value = paw32xx_sin_q15(normalized_angle);
+    cos_value = paw32xx_cos_q15(normalized_angle);
+
+    original_x = *x;
+    original_y = *y;
+
+    rotated_x =
+        ((original_x * cos_value) - (original_y * sin_value)) / 32767;
+
+    rotated_y =
+        ((original_x * sin_value) + (original_y * cos_value)) / 32767;
 
     *x = (int16_t)rotated_x;
     *y = (int16_t)rotated_y;
