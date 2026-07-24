@@ -1,6 +1,6 @@
 # ZMK PAW3222 Driver
 
-This driver enables the use of the PIXART PAW3222 optical sensor with the ZMK framework.
+This driver enables the use of the PixArt PAW3222 optical sensor with the ZMK framework.
 To support its use in KobitoKey, this driver includes sensor angle correction.
 X/Y movement data from the PAW3222 can be rotated by a configurable angle before being passed to ZMK's input processing system.
 
@@ -111,7 +111,7 @@ rotation-angle = <(-25)>;
 
 # ZMK PAW3222 ドライバ
 
-このドライバは、PIXART PAW3222光学センサーをZMKフレームワークで使用できるようにします。
+このドライバは、PixArt PAW3222光学センサーをZMKフレームワークで使用できるようにします。
 小人キーでの使用に際してセンサー角度の補正にも対応した次第です。
 PAW3222から取得したX/Y移動量を、ZMKの入力処理へ渡す前に任意の角度で回転できます。
 
