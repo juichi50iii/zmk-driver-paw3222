@@ -1,6 +1,9 @@
 # ZMK PAW3222 Driver
 
 This driver enables the use of the PIXART PAW3222 optical sensor with the ZMK framework.
+To support its use in KobitoKey, this driver includes sensor angle correction.
+X/Y movement data from the PAW3222 can be rotated by a configurable angle before being passed to ZMK's input processing system.
+
 
 ## Overview
 
@@ -15,15 +18,16 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: sekigon-gonnoc
-      url-base: https://github.com/sekigon-gonnoc
+    - name: juichi50iii
+      url-base: https://github.com/juichi50iii
+
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
     - name: zmk-driver-paw3222
-      remote: sekigon-gonnoc
+      remote: juichi50iii
       revision: main
 ```
 
@@ -65,6 +69,7 @@ Configure in your shield or board config file (.overlay or .dtsi):
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+        rotation-angle = <25>;
     };
 };
 ```
@@ -90,12 +95,25 @@ endif
 - `irq-gpios`: GPIO connected to the motion pin (required)
 - `res-cpi`: CPI resolution for the sensor (optional)
 - `force-awake`: Initialize the sensor in "force awake" mode (optional, boolean)
+- `rotation-angle`: Rotation angle applied to the reported X/Y movement (optional,integer)
+
+Examples:
+/* No rotation */
+rotation-angle = <0>;
+
+/* 25-degree rotation */
+rotation-angle = <25>;
+
+/* 25-degree rotation in the opposite direction */
+rotation-angle = <(-25)>;
 
 ---
 
 # ZMK PAW3222 ドライバ
 
 このドライバは、PIXART PAW3222光学センサーをZMKフレームワークで使用できるようにします。
+小人キーでの使用に際してセンサー角度の補正にも対応した次第です。
+PAW3222から取得したX/Y移動量を、ZMKの入力処理へ渡す前に任意の角度で回転できます。
 
 ## 概要
 
@@ -111,15 +129,15 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: sekigon-gonnoc
-      url-base: https://github.com/sekigon-gonnoc
+    - name: juichi50iii
+      url-base: https://github.com/juichi50iii
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
     - name: zmk-driver-paw3222
-      remote: sekigon-gonnoc
+      remote: juichi50iii
       revision: main
 ```
 
@@ -186,3 +204,14 @@ endif
 - `irq-gpios`: モーションピンに接続されたGPIO（必須）
 - `res-cpi`: センサーのCPI解像度（任意）
 - `force-awake`: センサーを「強制起動」モードで初期化（任意、ブール値）
+- `rotation-angle`: X/Y移動量に適用する回転角度 (任意)
+
+例：
+/* 回転なし */
+rotation-angle = <0>;
+
+/* 25度回転 */
+rotation-angle = <25>;
+
+/* 反対方向へ25度回転 */
+rotation-angle = <(-25)>;
