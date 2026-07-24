@@ -72,6 +72,7 @@ struct paw32xx_config {
     struct gpio_dt_spec irq_gpio;
     struct gpio_dt_spec power_gpio;
     int16_t res_cpi;
+    int16_t rotation_angle;
     bool force_awake;
 };
 
@@ -81,6 +82,49 @@ struct paw32xx_data {
     struct gpio_callback motion_cb;
     struct k_timer motion_timer; // Add timer for delayed motion checking
 };
+
+static void paw32xx_rotate_xy(int16_t *x, int16_t *y, int16_t angle)
+{
+    int32_t rotated_x;
+    int32_t rotated_y;
+
+    /* 角度を -359〜359° に収める */
+    angle %= 360;
+
+    /*
+     * まず動作確認用として90°刻みだけ対応。
+     * 任意角度対応は、このあと追加する。
+     */
+    switch (angle) {
+    case 0:
+        return;
+
+    case 90:
+    case -270:
+        rotated_x = -(*y);
+        rotated_y = *x;
+        break;
+
+    case 180:
+    case -180:
+        rotated_x = -(*x);
+        rotated_y = -(*y);
+        break;
+
+    case 270:
+    case -90:
+        rotated_x = *y;
+        rotated_y = -(*x);
+        break;
+
+    default:
+        /* まだ90°刻み以外には対応しない */
+        return;
+    }
+
+    *x = (int16_t)rotated_x;
+    *y = (int16_t)rotated_y;
+}
 
 static int paw32xx_force_cs(const struct device *dev, bool force_low) {
     const struct paw32xx_config *cfg = dev->config;
@@ -275,6 +319,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     if (ret < 0) {
         return;
     }
+
+    paw32xx_rotate_xy(&x, &y, cfg->rotation_angle);
 
     LOG_DBG("x=%4d y=%4d", x, y);
 
@@ -595,6 +641,7 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .irq_gpio = GPIO_DT_SPEC_INST_GET(n, irq_gpios),                                           \
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}),                               \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, -1),                                                \
+        .rotation_angle = DT_INST_PROP_OR(n, rotation_angle, 0),                                   \
         .force_awake = DT_INST_PROP(n, force_awake),                                               \
     };                                                                                             \
                                                                                                    \
