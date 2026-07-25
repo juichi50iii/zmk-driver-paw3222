@@ -39,17 +39,17 @@ Configure in your shield or board config file (.overlay or .dtsi):
 &pinctrl {
     spi0_default: spi0_default {
         group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 12)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 9)>,
-                <NRF_PSEL(SPIM_MISO, 1, 9)>;
+            psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 4)>,
+                <NRF_PSEL(SPIM_MISO, 0, 4)>;
         };
     };
 
     spi0_sleep: spi0_sleep {
         group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 12)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 9)>,
-                <NRF_PSEL(SPIM_MISO, 1, 9)>;
+            psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 4)>,
+                <NRF_PSEL(SPIM_MISO, 0, 4)>;
             low-power-enable;
         };
     };
@@ -68,7 +68,7 @@ Configure in your shield or board config file (.overlay or .dtsi):
         compatible = "pixart,paw3222";
         reg = <0>;
         spi-max-frequency = <2000000>;
-        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+        irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         rotation-angle = <25>;
     };
 };
@@ -149,17 +149,17 @@ manifest:
 &pinctrl {
     spi0_default: spi0_default {
         group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 12)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 9)>,
-                <NRF_PSEL(SPIM_MISO, 1, 9)>;
+            psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 4)>,
+                <NRF_PSEL(SPIM_MISO, 0, 4)>;
         };
     };
 
     spi0_sleep: spi0_sleep {
         group1 {
-            psels = <NRF_PSEL(SPIM_SCK, 0, 12)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 9)>,
-                <NRF_PSEL(SPIM_MISO, 1, 9)>;
+            psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 4)>,
+                <NRF_PSEL(SPIM_MISO, 0, 4)>;
             low-power-enable;
         };
     };
@@ -178,7 +178,8 @@ manifest:
         compatible = "pixart,paw3222";
         reg = <0>;
         spi-max-frequency = <2000000>;
-        irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+        irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        rotation-angle = <25>;
     };
 };
 ```
