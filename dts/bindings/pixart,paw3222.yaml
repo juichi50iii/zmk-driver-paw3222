@@ -34,6 +34,13 @@ properties:
       Clockwise rotation angle in degrees applied to the reported X/Y movement.
       Positive and negative integer values are supported.
 
+  movement-threshold:
+    type: int
+    default: 0
+    description: |
+      Ignore motion when both X and Y movement values are below
+      this threshold.
+
   force-awake:
     type: boolean
     description: |
