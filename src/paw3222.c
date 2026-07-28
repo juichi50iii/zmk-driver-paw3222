@@ -386,8 +386,8 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
 
     paw32xx_rotate_xy(&x, &y, cfg->rotation_angle);
 
-    if (ABS(x) < cfg->movement_threshold &&
-    ABS(y) < cfg->movement_threshold) {
+    if (abs(x) < cfg->movement_threshold &&
+    abs(y) < cfg->movement_threshold) {
     x = 0;
     y = 0;
 }
