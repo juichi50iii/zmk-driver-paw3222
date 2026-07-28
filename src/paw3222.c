@@ -73,6 +73,7 @@ struct paw32xx_config {
     struct gpio_dt_spec power_gpio;
     int16_t res_cpi;
     int16_t rotation_angle;
+    int16_t movement_threshold;
     bool force_awake;
 };
 
@@ -187,6 +188,7 @@ static void paw32xx_rotate_xy(int16_t *x, int16_t *y, int16_t angle)
     *x = (int16_t)rotated_x;
     *y = (int16_t)rotated_y;
 }
+
 
 static int paw32xx_force_cs(const struct device *dev, bool force_low) {
     const struct paw32xx_config *cfg = dev->config;
@@ -383,6 +385,12 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     paw32xx_rotate_xy(&x, &y, cfg->rotation_angle);
+
+    if (ABS(x) < cfg->movement_threshold &&
+    ABS(y) < cfg->movement_threshold) {
+    x = 0;
+    y = 0;
+}
 
     LOG_DBG("x=%4d y=%4d", x, y);
 
@@ -704,6 +712,7 @@ static int paw32xx_pm_action(const struct device *dev, enum pm_device_action act
         .power_gpio = GPIO_DT_SPEC_INST_GET_OR(n, power_gpios, {0}),                               \
         .res_cpi = DT_INST_PROP_OR(n, res_cpi, -1),                                                \
         .rotation_angle = DT_INST_PROP_OR(n, rotation_angle, 0),                                   \
+        .movement_threshold = DT_INST_PROP_OR(n, movement_threshold, 0),                           \
         .force_awake = DT_INST_PROP(n, force_awake),                                               \
     };                                                                                             \
                                                                                                    \
