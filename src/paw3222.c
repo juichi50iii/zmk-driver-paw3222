@@ -82,6 +82,10 @@ struct paw32xx_data {
     struct k_work motion_work;
     struct gpio_callback motion_cb;
     struct k_timer motion_timer; // Add timer for delayed motion checking
+
+    /* 閾値へ届くまで微小な移動量を保存する */
+    int32_t accumulated_x;
+    int32_t accumulated_y;
 };
 
 /*
@@ -371,11 +375,17 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
     }
 
     if ((val & MOTION_STATUS_MOTION) == 0x00) {
-        // No motion detected, re-enable interrupts and wait for next interrupt
-        paw32xx_interrupt_enable(dev);
+    // No motion detected, re-enable interrupts and wait for next interrupt
+    paw32xx_interrupt_enable(dev);
 
-        if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
-            return;
+    if (gpio_pin_get_dt(&cfg->irq_gpio) == 0) {
+        /*
+         * 一連の移動が終わったので、閾値未満の残量を破棄する。
+         * 古いノイズが次回の動作へ持ち越されるのを防ぐ。
+         */
+        data->accumulated_x = 0;
+        data->accumulated_y = 0;
+        return;
         }
     }
 
@@ -386,19 +396,43 @@ static void paw32xx_motion_work_handler(struct k_work *work) {
 
     paw32xx_rotate_xy(&x, &y, cfg->rotation_angle);
 
-    if (abs(x) < cfg->movement_threshold &&
-    abs(y) < cfg->movement_threshold) {
-    x = 0;
-    y = 0;
+/*
+ * 閾値が設定されている場合は、移動量をX/Yそれぞれに溜め込む。
+ * どちらか一方が閾値へ到達したら、両軸の合計値をまとめて報告する。
+ */
+if (cfg->movement_threshold > 0) {
+    data->accumulated_x += x;
+    data->accumulated_y += y;
+
+    if (abs(data->accumulated_x) < cfg->movement_threshold &&
+        abs(data->accumulated_y) < cfg->movement_threshold) {
+
+        LOG_DBG("accumulating x=%4d y=%4d",
+                data->accumulated_x,
+                data->accumulated_y);
+
+        /*
+         * まだ閾値未満なので、ZMKへ移動イベントを送らない。
+         * ただし、次のセンサー読み取りは続ける。
+         */
+        k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
+        return;
+    }
+
+    x = (int16_t)data->accumulated_x;
+    y = (int16_t)data->accumulated_y;
+
+    data->accumulated_x = 0;
+    data->accumulated_y = 0;
 }
 
-    LOG_DBG("x=%4d y=%4d", x, y);
+LOG_DBG("x=%4d y=%4d", x, y);
 
-    input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
-    input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
+input_report_rel(data->dev, INPUT_REL_X, x, false, K_FOREVER);
+input_report_rel(data->dev, INPUT_REL_Y, y, true, K_FOREVER);
 
-    // Schedule next check after 15ms without using interrupts
-    k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
+// Schedule next check after 15ms without using interrupts
+k_timer_start(&data->motion_timer, K_MSEC(15), K_NO_WAIT);
 }
 
 static void paw32xx_motion_handler(const struct device *gpio_dev, struct gpio_callback *cb,
